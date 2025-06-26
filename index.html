@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Recetario de Coctelería</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fdfdfd;
+      color: #333;
+    }
+    header {
+      background: #000;
+      color: white;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+    footer {
+      background: #000;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+    }
+    .container {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .search-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .search-filter input,
+    .search-filter select {
+      padding: 0.5rem;
+      font-size: 1rem;
+      flex: 1;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: scale(1.02);
+    }
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+    .card-content {
+      padding: 1rem;
+    }
+    .card h3 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+    .stars {
+      color: gold;
+      margin: 0.5rem 0;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-content img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .modal-close {
+      float: right;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: red;
+    }
+    .logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+.logo-container img {
+  height: 60px;
+}
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <img src="logo.png.png" alt="Logo del Recetario" />
+      <h1>Recetario de Coctelería</h1>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="search-filter">
+      <input type="text" placeholder="Buscar cóctel..." id="searchInput" onkeyup="filterRecipes()" />
+      <select id="filterLiquor" onchange="filterRecipes()">
+        <option value="">Todos</option>
+        <option value="tequila">Tequila</option>
+        <option value="vodka">Vodka</option>
+        <option value="whisky">Whisky</option>
+        <option value="ron">Ron</option>
+        <option value="ginebra">Ginebra</option>
+        <option value="vino">Vino</option>
+        <option value="cerveza">Cerveza</option>
+        <option value="café">Café</option>
+        <option value="infusiones">Infusiones</option>
+      </select>
+    </div>
+    <div class="grid" id="recipeGrid"></div>
+  </div>
+
+  <div class="modal" id="recipeModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <div id="modalDetails"></div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 Recetario de Coctelería. Todos los derechos reservados.
+  </footer>
+
+  <script>
+    const recipes = [
+      { name: "Caipirinha", image: "caipirinha.jpg", difficulty: 2, liquor: "ron", ingredients: ["50 ml de cachaça", "1 lima", "2 cucharaditas de azúcar", "Hielo"], preparation: ["Cortar la lima en trozos y machacarla con el azúcar.", "Añadir hielo y la cachaça.", "Remover bien y servir."], history: "La Caipirinha es el cóctel nacional de Brasil, refrescante y perfecto para el verano." },
+      { name: "Manhattan", image: "manhattan.jpg", difficulty: 3, liquor: "whisky", ingredients: ["50 ml de whisky", "20 ml de vermut rojo", "Unas gotas de angostura", "Hielo", "Cereza"], preparation: ["Mezclar el whisky, vermut y angostura con hielo.", "Colar y servir en copa de cóctel.", "Decorar con una cereza."], history: "El Manhattan nació a finales del siglo XIX y es un cóctel elegante y fuerte." },
+      { name: "Espresso Martini", image: "espressomartini.jpg", difficulty: 2, liquor: "café", ingredients: ["40 ml de vodka", "20 ml de licor de café", "1 taza de espresso", "Hielo"], preparation: ["Agitar todos los ingredientes con hielo.", "Servir en copa de cóctel.", "Decorar con granos de café."], history: "Inventado en los 80s, es ideal para los amantes del café y la coctelería." },
+      { name: "Margarita", image: "margarita.jpg", difficulty: 2, liquor: "tequila", ingredients: ["50 ml de tequila", "30 ml de triple sec", "20 ml de jugo de lima", "Hielo", "Sal para el borde"], preparation: ["Agitar todos los ingredientes con hielo.", "Servir en copa con borde salado."], history: "La Margarita es un ícono de la coctelería mexicana y mundial." },
+      { name: "Mojito", image: "mojito.jpg", difficulty: 2, liquor: "ron", ingredients: ["50 ml de ron blanco", "Menta fresca", "2 cucharaditas de azúcar", "Jugo de lima", "Soda", "Hielo"], preparation: ["Machacar la menta con azúcar y lima.", "Añadir ron, hielo y completar con soda."], history: "Clásico cubano refrescante y popular en todo el mundo." },
+      { name: "Gin Tonic", image: "gintonic.jpg", difficulty: 1, liquor: "ginebra", ingredients: ["50 ml de ginebra", "Agua tónica", "Rodaja de lima o pepino", "Hielo"], preparation: ["Servir la ginebra sobre hielo.", "Completar con tónica y decorar."], history: "Nacido como tónico medicinal, hoy es un cóctel elegante y versátil." },
+      { name: "Gin Fizz", image: "ginfizz.jpg", difficulty: 2, liquor: "ginebra", ingredients: ["45 ml de ginebra", "30 ml de jugo de limón", "15 ml de jarabe de azúcar", "Agua con gas", "Hielo", "Rodaja de limón"], preparation: ["Agitar la ginebra, jugo de limón y jarabe con hielo.", "Colar en un vaso alto con hielo.", "Completar con agua con gas.", "Decorar con una rodaja de limón."], history: "El Gin Fizz es un cóctel clásico originado en el siglo XIX, conocido por su frescura y ligereza. Muy popular durante la era dorada de la coctelería." },
+      { name: "Screwdriver", image: "screwdriver.jpg", difficulty: 1, liquor: "vodka", ingredients: ["50 ml de vodka", "100 ml de zumo de naranja", "Hielo"], preparation: ["Servir el vodka sobre hielo en un vaso alto.", "Agregar el zumo de naranja y remover suavemente."], history: "El Screwdriver es un cóctel simple y popular que ganó fama en los años 40; su nombre proviene de los trabajadores petroleros que lo mezclaban con un destornillador." },
+      { name: "Cuba Libre", image: "cuba-libre.jpg", difficulty: 1, liquor: "ron", ingredients: ["50 ml de ron", "100 ml de cola", "Zumo de media lima", "Hielo", "Rodaja de lima (opcional)"], preparation: ["Exprimir la lima en un vaso con hielo.", "Agregar ron y completar con cola.", "Decorar con una rodaja de lima si se desea."], history: "El Cuba Libre nació en Cuba a principios del siglo XX tras la guerra hispano-estadounidense, como símbolo de libertad." },
+      { name: "Rusty Nail", image: "rusty-nail.jpg", difficulty: 2, liquor: "whisky", ingredients: ["40 ml de whisky escocés", "20 ml de Drambuie", "Hielo", "Twist de limón (opcional)"], preparation: ["Mezclar el whisky y el Drambuie sobre hielo en un vaso bajo.", "Remover suavemente.", "Decorar con un twist de limón si se desea."], history: "El Rusty Nail se popularizó en los años 60, y combina el sabor fuerte del whisky con el dulzor especiado del Drambuie." },
+      { name: "Black Russian", image: "black-russian.jpg", difficulty: 1, liquor: "vodka", ingredients: ["50 ml de vodka", "20 ml de licor de café", "Hielo"], preparation: ["Verter el vodka y el licor de café en un vaso bajo con hielo.", "Remover suavemente."], history: "Creado en Bélgica en 1949, el Black Russian fue dedicado a una embajadora americana, con 'black' por el licor de café y 'russian' por el vodka." },
+      
+      
+      
+      { name: "Negroni", image: "negroni.jpg", difficulty: 3, liquor: "ginebra", ingredients: ["30 ml de ginebra", "30 ml de vermut rojo", "30 ml de Campari", "Hielo", "Rodaja de naranja"], preparation: ["Mezclar los ingredientes en vaso bajo con hielo.", "Decorar con una rodaja de naranja."], history: "Un clásico italiano de sabor amargo y sofisticado." },
+      { name: "Daiquiri", image: "daiquiri.jpg", difficulty: 2, liquor: "ron", ingredients: ["50 ml de ron blanco", "25 ml de jugo de lima", "15 ml de azúcar líquida", "Hielo"], preparation: ["Agitar todos los ingredientes con hielo.", "Colar y servir en copa fría."], history: "Cuba es su cuna, fue favorito de Hemingway." },
+      { name: "Old Fashioned", image: "oldfashioned.jpg", difficulty: 3, liquor: "whisky", ingredients: ["45 ml de bourbon", "1 terrón de azúcar", "Unas gotas de angostura", "Un chorrito de agua", "Hielo", "Cáscara de naranja"], preparation: ["Disolver azúcar con angostura y agua.", "Añadir whisky y hielo.", "Decorar con piel de naranja."], history: "Uno de los cócteles más antiguos del mundo, directo y potente." },
+      { name: "Mai Tai", image: "maitai.jpg", difficulty: 3, liquor: "ron", ingredients: ["30 ml de ron blanco", "30 ml de ron oscuro", "15 ml de curaçao naranja", "10 ml de almendra", "30 ml de jugo de lima"], preparation: ["Agitar todos los ingredientes con hielo.", "Servir en vaso alto con hielo."], history: "Cóctel tiki creado en los años 40, tropical y dulce." },
+      { name: "Whisky Sour", image: "whiskysour.jpg", difficulty: 3, liquor: "whisky", ingredients: ["45 ml de whisky", "30 ml de jugo de limón", "15 ml de jarabe de azúcar", "Clara de huevo (opcional)"], preparation: ["Agitar los ingredientes en seco (sin hielo) si se usa clara.", "Agregar hielo, agitar y colar."], history: "Cóctel clásico del siglo XIX, equilibrado y cítrico." },
+      
+      { name: "Moscow Mule", image: "moscowmule.jpg", difficulty: 1, liquor: "vodka", ingredients: ["50 ml de vodka", "120 ml de ginger beer", "10 ml de jugo de lima", "Hielo", "Rodaja de lima", "Hojas de menta"], preparation: ["Llenar una taza de cobre con hielo.", "Añadir el vodka y el jugo de lima.", "Completar con ginger beer.", "Decorar con lima y menta."], history: "Creado en los años 40 en EE. UU., el Moscow Mule popularizó el uso de vodka en América." },
+
+      { name: "Sex on the Beach", image: "sexonthebeach.jpg", difficulty: 2, liquor: "vodka", ingredients: ["40 ml de vodka", "20 ml de licor de durazno", "40 ml de jugo de naranja", "40 ml de jugo de arándano", "Hielo"], preparation: ["Llenar un vaso con hielo.", "Añadir todos los ingredientes y remover suavemente.", "Decorar con una rodaja de naranja."], history: "Cóctel tropical muy popular en los años 80, dulce y afrutado, ideal para el verano." }
+    ];
+
+    const recipeGrid = document.getElementById('recipeGrid');
+    const modal = document.getElementById('recipeModal');
+    const modalDetails = document.getElementById('modalDetails');
+    const searchInput = document.getElementById('searchInput');
+    const filterLiquor = document.getElementById('filterLiquor');
+
+    function displayRecipes(list) {
+      recipeGrid.innerHTML = '';
+      if(list.length === 0){
+        recipeGrid.innerHTML = '<p>No se encontraron recetas.</p>';
+        return;
+      }
+      list.forEach(recipe => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => showDetails(recipe);
+        card.innerHTML = `
+          <img src="images/${recipe.image}" alt="${recipe.name}" />
+          <div class="card-content">
+            <h3>${recipe.name}</h3>
+            <div class="stars">${'★'.repeat(recipe.difficulty)}${'☆'.repeat(3 - recipe.difficulty)}</div>
+          </div>
+        `;
+        recipeGrid.appendChild(card);
+      });
+    }
+
+    function showDetails(recipe) {
+      modalDetails.innerHTML = `
+        <h2>${recipe.name}</h2>
+        <img src="images/${recipe.image}" alt="${recipe.name}" />
+        <h3>Dificultad: ${recipe.difficulty}/3</h3>
+        <h3>Licor principal: ${recipe.liquor}</h3>
+        <h3>Ingredientes:</h3>
+        <ul>${recipe.ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
+        <h3>Preparación:</h3>
+        <ol>${recipe.preparation.map(step => `<li>${step}</li>`).join('')}</ol>
+        <h3>Historia:</h3>
+        <p>${recipe.history}</p>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    function filterRecipes() {
+      const query = searchInput.value.toLowerCase();
+      const liquor = filterLiquor.value;
+      const filtered = recipes.filter(r => {
+        return (r.name.toLowerCase().includes(query) || r.ingredients.some(i => i.toLowerCase().includes(query))) 
+          && (liquor === '' || r.liquor === liquor);
+      });
+      displayRecipes(filtered);
+    }
+
+    // Mostrar todas las recetas inicialmente
+    displayRecipes(recipes);
+
+    // Cerrar modal si se hace click fuera del contenido
+    modal.addEventListener('click', e => {
+      if(e.target === modal) closeModal();
+    });
+    function showDetails(recipe) {
+  modalDetails.innerHTML = `
+    <h2>${recipe.name}</h2>
+    <img src="images/${recipe.image}" alt="${recipe.name}" />
+    <h3>Dificultad: ${recipe.difficulty}/3</h3>
+    <h3>Licor principal: ${capitalize(recipe.liquor)}</h3>
+    <h3>Ingredientes:</h3>
+    <ul>${recipe.ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
+    <h3>Preparación:</h3>
+    <ol>${recipe.preparation.map(step => `<li>${step}</li>`).join('')}</ol>
+    <h3>Historia:</h3>
+    <p>${recipe.history}</p>
+  `;
+  modal.style.display = 'flex';
+}
+
+// Cierra el modal
+function closeModal() {
+  modal.style.display = 'none';
+}
+
+// Función para filtrar por búsqueda y licor
+function filterRecipes() {
+  const searchText = searchInput.value.toLowerCase();
+  const liquorFilter = filterLiquor.value.toLowerCase();
+
+  const filtered = recipes.filter(recipe => {
+    const matchesSearch = recipe.name.toLowerCase().includes(searchText);
+    const matchesLiquor = liquorFilter === '' || recipe.liquor.toLowerCase() === liquorFilter;
+    return matchesSearch && matchesLiquor;
+  });
+
+  displayRecipes(filtered);
+}
+
+// Función para capitalizar la primera letra
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// Cerrar modal al hacer clic fuera del contenido
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    closeModal();
+  }
+});
+
+// Inicializa mostrando todas las recetas
+displayRecipes(recipes);
+
+  </script>
+  <script>
+    // Al terminar de cargar el DOM...
+    document.addEventListener('DOMContentLoaded', () => {
+      const footer = document.querySelector('footer');
+  
+      const extraInfo = document.createElement('div');
+      extraInfo.style.marginTop = '1rem';
+      extraInfo.style.fontSize = '0.8rem';
+      extraInfo.style.lineHeight = '1.4';
+  
+      extraInfo.innerHTML = `
+        <p>📧 Contacto: <a href="mailto:info@cocteles.com">info@cocteles.com</a></p>
+        <p>Síguenos en:
+          <a href="https://instagram.com/tu_cuenta" target="_blank">Instagram</a> ·
+          <a href="https://facebook.com/tu_página" target="_blank">Facebook</a> ·
+          <a href="https://twitter.com/tu_cuenta" target="_blank">Twitter</a>
+        </p>
+        <p>
+          <a href="/aviso-legal.html">Aviso Legal</a> ·
+          <a href="/privacidad.html">Política de Privacidad</a> ·
+          <a href="/cookies.html">Política de Cookies</a>
+        </p>
+        <p>© 2025 Recetario de Coctelería. Todos los derechos reservados.</p>
+      `;
+  
+      footer.appendChild(extraInfo);
+    });
+  </script>
+  
+</body>
+</html>
+
+
